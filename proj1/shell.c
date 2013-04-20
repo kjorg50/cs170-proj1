@@ -14,18 +14,15 @@ char buff[100];
 typedef enum { false, true } bool;
 
 int checkExit(char* test);
-int parseCmd(char ** array, char * str);
+int createArgArray(char ** array, char * str);
 int checkAmpersand(char ** array, int size);
-// bool read_line(char* buffer);
 void createExecParams(char ** array, char ** result, int size);
 
 int main()
 { 
   int child_status = 0;
-
   pid_t child_p;
 
-  //p = getpid(); // get the parent process id
   printf("%s", prompt);
 
   // This while loop will continue as long as there is valid input
@@ -34,7 +31,7 @@ int main()
       if( checkExit(buff)==0 ){ exit(0); }
 
       char * wordarray[50];//change to theoretical max num of words according to buff
-      int num = parseCmd(wordarray,buff);
+      int num = createArgArray(wordarray,buff);
 
       /* debug for tokens
       int i;
@@ -48,6 +45,7 @@ int main()
 	printf("ampersand found\n");
 	// end debug */
   
+      // get the necessary tokens for the exec()
       char* args[num+1];
       createExecParams(wordarray, args, num);
 
@@ -60,13 +58,11 @@ int main()
 	      execvp(args[0], args);
       } 
       else if(child_p <= 0){
-	     printf("ERROR in child process");
+	      printf("ERROR in child process");
       } 
       else { // it is the parent, so wait
-	     wait(&child_status);
+	      wait(&child_status);
       } 
-
-      // now, execution goes back to the parent process
       
       printf("%s", prompt); 
     }
@@ -84,7 +80,7 @@ int checkExit(char* test)
 // This function takes the 'str' string containing all the input, and then
 //  parses the input into tokens, which are stored in the 'array' variable.
 //  The number of tokens is returned.
-int parseCmd(char ** array, char * str){
+int createArgArray(char ** array, char * str){
   char dividers[] = " ,\t\n";
   char * word;
   int count = 0;
@@ -108,39 +104,11 @@ int checkAmpersand(char ** array, int size){
 // Takes all the tokens and adds the null value to the end of the array
 void createExecParams(char ** array, char ** result, int size)
 {
-  // char* result[size+1];
   int i;
   for(i=0; i<size; i++){
     result[i] = array[i];
   }
   result[size] = NULL;
 
-  //return result;
 }
 
-
-
-/*
-  This function will attempt to read the input from the user and store it in
-  the buffer variable. If this happens successfully it returns 'true'; 
-  otherwise if fgets returns NULL, read_line() returns 'false'.
-
-  fgets only returns NULL if there is an error or an EOF
-
-bool read_line(char* buffer)
-{
-  bool result = false;
-
-  if( fgets(buffer, sizeof(buffer), stdin) != NULL ){
-    if( checkExit(buffer)==0 ){
-      exit(0);
-    }
-    result = true;
-  }
-  else {
-    result = false;
-  } 
-
-  return result;
-}
-*/
