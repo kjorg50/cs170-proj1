@@ -115,7 +115,7 @@ void createExecParams(char ** array, char ** result, int size)
   }
   result[size] = NULL;
 
-  //return result;
+  return 0;
 }
 
 
