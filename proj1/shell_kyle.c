@@ -1,6 +1,5 @@
+// Kyle Jorgensen and Alex Mousavi, Proj 1, CS170, 4-17-13
 
-// Kyle Jorgensen, Proj 1, CS170, 4-17-13
-// partner: Alex Mousavi
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -280,8 +279,8 @@ int main()
 					}
 				}
     		} else {
-    			//in parent, wait
-    			wait(&child_status);
+    			//in parent, wait for child if there is no ampersand 
+    			if(amp==0)wait(&child_status);
 				close(write[i]);
 				if(i > 0){
 					close(read[i]);

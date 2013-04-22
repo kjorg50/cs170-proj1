@@ -28,6 +28,7 @@ int verifyCommand(char * str);
 void trim(char * str);
 int verifyAmpersand(char * str);
 int checkCd(char * array);
+int cd(char * arg, int count);
 //////////////
 int main()
 { 
@@ -48,8 +49,6 @@ int main()
 			printf("%s", prompt);
 			continue;
 		}
-		
-		//printf("AMP = %d\n",amp);
 		
 		//gets count of pipes
 		int pipeCount = countPipes(buff);
@@ -110,7 +109,6 @@ int main()
 				out = outFile;
 			}
 			
-			//printf("main: _%s_\n",mainCommand);
 			
     	}
     	
@@ -122,10 +120,9 @@ int main()
     		continue;
     	}
     	
-    	//printf("in : _%s_\n",in);
-		//printf("out: _%s_\n",out);
     	
     	//now create a new command array
+    	
     	
     	char ** cmdPtr = NULL;
     	
@@ -138,7 +135,6 @@ int main()
     	fileLast = addOut;
     	
     	if(newCmdCount > cmdCount){
-    		//printf("old size: %d new size: %d\n",cmdCount,newCmdCount);
     		int k=0;
     		int start;
     		if(addIn){
@@ -243,7 +239,7 @@ int main()
 					exit(0);
 					
 				} else if(i==cmdCount-1&&fileLast==1){
-					//read from input and write to file
+					//read frominput and write to file
 					FILE * file;
 					file = fopen(args[0],"w");
 					if(file!=NULL){
@@ -261,8 +257,12 @@ int main()
 					//run the execute
 					
 					if(checkCd(args[0])){
-						printf("cd. cmdSize: %d\n",cmdSize);
 						
+						if(cmdSize==1){
+							cd(NULL,1);
+						} else {
+							cd(args[1],cmdSize);
+						}
 					} else {
 					
 						int status = execvp(args[0], args);
@@ -273,7 +273,7 @@ int main()
 						}
 					}
 				}
-    		} else { 
+    		} else {
     			//in parent, wait
     			if(amp==0)wait(&child_status);
 				close(write[i]);
@@ -505,10 +505,24 @@ int verifyAmpersand(char * str){
 		i++;
 	}
 	return found;
+
 }
 
-
-
+int cd(char * arg, int count){
+	char * str = arg;
+	if(count == 1){
+		chdir(getenv("HOME"));
+	} else {
+		if(str[0]=='~'){
+			char * dir = strcat(getenv("HOME"),&str[1]);
+			printf("%s\n",dir);
+			chdir(dir);
+			dir = NULL;
+		}
+		chdir(str);
+	} 
+	return 0;
+}
 
 
 
