@@ -19,7 +19,6 @@ char ** commands;
 //prototypes//
 int checkExit(char* test);
 int createArgArray(char ** array, char * str);
-int checkAmpersand(char ** array, int size);
 void createExecParams(char ** array, char ** result, int size);
 int countPipes(char * str);
 int setCommands(char ** array,char * str);
@@ -28,6 +27,7 @@ int verifyCommand(char * str);
 void trim(char * str);
 int verifyAmpersand(char * str);
 int checkCd(char * array);
+int cd(char * arg, int count);
 //////////////
 
 int main()
@@ -83,7 +83,7 @@ int main()
 			char * outFile = NULL;
 			char * inFile = NULL;
 			
-			
+			// determine input/output file positions 
 			int outDistance = -1;
 			int inDistance = -1;
 			splitCommand(mainCommand,&outDistance,&inDistance);
@@ -112,7 +112,6 @@ int main()
 				out = outFile;
 			}
 			
-			//printf("main: _%s_\n",mainCommand);
 			
     	}// end for loop
     	
@@ -123,12 +122,9 @@ int main()
     		continue;
     	}
     	
-    	printf("in : _%s_\n",in);
-		printf("out: _%s_\n",out);
     	
-    	//now create a new command array
-    	printf("I'm still alive. 1\n");
-    	
+    	// now create a new command array
+
     	char ** cmdPtr = NULL;
     	
     	int addIn = (in==NULL) ? 0 : 1;
@@ -141,7 +137,6 @@ int main()
     	
 		// if there are input or output files
     	if(newCmdCount > cmdCount){
-    		printf("old size: %d new size: %d\n",cmdCount,newCmdCount);
     		int k=0;
     		int start;
     		if(addIn){
@@ -169,10 +164,6 @@ int main()
     		cmdPtr = commands;
     	}
     	
-    	printf("printing commands\n");
-    	for(i=0;i<cmdCount;i++){
-    		printf("%s\n",cmdPtr[i]);
-    	}
     	
     	/////////////////
     	//intialize pipes
@@ -189,15 +180,17 @@ int main()
 			read[j+1]=f[0];
 			write[j]=f[1];
 		}
+		// Go through and execute the commands with proper forks, pipes, etc. 
     	for(i=0;i<cmdCount;i++){
     		
     		//initialize array argument
-    		char * command[50];
+    		char * command[1024];
     		
-			
+			// returns the number of tokens in the command and sets 
+			// the command array with those tokens
 			int cmdSize =  createArgArray(command,cmdPtr[i]);
 			char * args[cmdCount+1];
-    		createExecParams(command,args,cmdSize);
+    		createExecParams(command,args,cmdSize); 
     		
     		//initialize needed vars for forking
     		int child_status = 0;
@@ -226,7 +219,7 @@ int main()
 				
 				
 				if(i==0&&fileFirst==1){
-					//read from input file and print it
+					//read from input file and print it (to pipe input)
 					// i.e. command < input.txt
 					
 					char buffer[300];
@@ -250,6 +243,7 @@ int main()
 				} else if(i==cmdCount-1&&fileLast==1){
 					//read from input and output to file
 					// i.e. command > file.txt
+
 					FILE * file;
 					file = fopen(args[0],"w");
 					if(file!=NULL){
@@ -267,10 +261,22 @@ int main()
 				} 
 				else {
 					//run the execute
-					int status = execvp(args[0], args);
-					if(status < 0){
-						printf("Command %s not found.\n",args[0]);
-						exit(1);
+					
+					// if it is a cd command
+					if(checkCd(args[0])){
+						
+						if(cmdSize==1){
+							cd(NULL,1);
+						} else {
+							cd(args[1],cmdSize);
+						}
+					} else { // it is a normal command
+					
+						int status = execvp(args[0], args);
+						if(status < 0){
+							printf("ERROR: exec failed\n");
+							exit(1);
+						}
 					}
 				}
     		} else {
@@ -281,12 +287,12 @@ int main()
 					close(read[i]);
 				}
     		}
-    	} // end while
+    	} // end for loop
     	
     	printf("%s", prompt);
     	
     	
-    }
+    }// end while loop 
    
   return 0;
 }
@@ -314,12 +320,6 @@ int createArgArray(char ** array, char * str){
       count++;
     }
   return count;
-}
-
-// Checks if the last token is an ampersand
-int checkAmpersand(char ** array, int size){
-  char ampersand[] = "&";
-  return strcmp(array[size-1],ampersand);
 }
 
 // Takes all the tokens and adds the null value to the end of the array
@@ -475,7 +475,7 @@ void trim(char * str){
 }
 
 // Checks if the last character is an ampersand
-// Returns 1 if true, 0 if false, and -1 if there is an ampersand syntax error
+// Returns 1 if true, 0 if false, or -1 if there is an ampersand syntax error
 int verifyAmpersand(char * str){
 	int found = 0;
 	int i=0;
@@ -506,6 +506,23 @@ int checkCd(char * array){
 	} else {
 		return 0;
 	}
+}
+
+// takes a cd command and changes to the correct directory
+int cd(char * arg, int count){
+	char * str = arg;
+	if(count == 1){
+		chdir(getenv("HOME"));
+	} else {
+		if(str[0]=='~'){
+			char * dir = strcat(getenv("HOME"),&str[1]);
+			printf("%s\n",dir);
+			chdir(dir);
+			dir = NULL;
+		}
+		chdir(str);
+	} 
+	return 0;
 }
 
 

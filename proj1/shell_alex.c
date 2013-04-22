@@ -10,7 +10,7 @@
 
 /* Global Variables */
 char* prompt = "sish>";
-char buff[100];
+char buff[1024];
 
 //for args
 char ** commands;
@@ -26,10 +26,12 @@ int setCommands(char ** array,char * str);
 void splitCommand(char * head,int * out, int * in);
 int verifyCommand(char * str);
 void trim(char * str);
-
+int verifyAmpersand(char * str);
+int checkCd(char * array);
 //////////////
 int main()
 { 
+  
 
   printf("%s", prompt);
 
@@ -38,17 +40,28 @@ int main()
     {      
     	if( checkExit(buff)==0 ){ exit(0); }
 			
+		//check for ampersand
+		
+		int amp = verifyAmpersand(buff);
+		if(amp==-1){
+			printf("ERROR: exec failed\n");
+			printf("%s", prompt);
+			continue;
+		}
+		
+		//printf("AMP = %d\n",amp);
+		
 		//gets count of pipes
 		int pipeCount = countPipes(buff);
 		
-		//create of an array of commands separated between the pipes
+		//create of an array of commands separated between the redirects
 		int cmdCount = pipeCount+1;
 		char * commands[cmdCount];
-		if(setCommands(commands,buff) != cmdCount){
+		if(setCommands(commands,buff) != (pipeCount+1)){
 			printf("ERROR: exec failed\n");
-			continue; // stop this iteration of the while loop and continue
-
-			//this isn't just a check, setCommands sets the 'commands' array
+			printf("%s", prompt);
+			continue;
+			//this isn't just a check, setCommands does something too
 		}
     	
     	char * in = NULL;
@@ -56,16 +69,14 @@ int main()
     	int fileFirst = 0;
     	int fileLast = 0;
     	int valid = 1;
-
-        // Now loop through all the commands of the input
+    	/////experiment///
     	int i;
     	for(i=0;i<cmdCount;i++){
     		
     		int verify = verifyCommand(commands[i]);
-            // if a command is not valid, then break out of the loop
     		if(verify!=1){
     			valid = 0;
-                break;
+    			break;
     		}
     		
     		char * mainCommand = commands[i];
@@ -76,12 +87,10 @@ int main()
 			int outDistance = -1;
 			int inDistance = -1;
 			splitCommand(mainCommand,&outDistance,&inDistance);
-            // if there is an output file
 			if(outDistance != -1){
 				outFile = &mainCommand[outDistance];
 				trim(outFile);
 			}
-            // if there is an input file
 			if(inDistance != -1){
 				inFile = &mainCommand[inDistance];
 				trim(inFile);
@@ -90,32 +99,33 @@ int main()
 			
 			if(inFile!= NULL && i!=0){
 				valid=0;
+				break;
 			} else if(inFile != NULL) {
 				in = inFile;
 			}
 			if(outFile != NULL && i!=cmdCount-1){
 				valid=0;
+				break;
 			} else if(outFile != NULL) {
 				out = outFile;
 			}
 			
-			printf("main: _%s_\n",mainCommand);
+			//printf("main: _%s_\n",mainCommand);
 			
     	}
     	
-    	printf("I'm still alive. 0\n");
+    	
     	
     	if(valid==0){
-    		printf("Invalid command.\n");
+    		printf("ERROR: exec failed\n");
     		printf("%s", prompt);
     		continue;
     	}
     	
-    	printf("in : _%s_\n",in);
-		printf("out: _%s_\n",out);
+    	//printf("in : _%s_\n",in);
+		//printf("out: _%s_\n",out);
     	
     	//now create a new command array
-    	printf("I'm still alive. 1\n");
     	
     	char ** cmdPtr = NULL;
     	
@@ -128,7 +138,7 @@ int main()
     	fileLast = addOut;
     	
     	if(newCmdCount > cmdCount){
-    		printf("old size: %d new size: %d\n",cmdCount,newCmdCount);
+    		//printf("old size: %d new size: %d\n",cmdCount,newCmdCount);
     		int k=0;
     		int start;
     		if(addIn){
@@ -149,15 +159,15 @@ int main()
     		
     		cmdCount = newCmdCount;
     		cmdPtr = newCommands;
-    		printf("I'm still alive. 2\n");
+    		//printf("I'm still alive. 2\n");
     	} else {
     		cmdPtr = commands;
     	}
     	
-    	printf("printing commands\n");
-    	for(i=0;i<cmdCount;i++){
-    		printf("%s\n",cmdPtr[i]);
-    	}
+    	//printf("printing commands\n");
+    	//for(i=0;i<cmdCount;i++){
+    	//	printf("%s\n",cmdPtr[i]);
+    	//}
     	
     	/////////////////
     	//intialize pipes
@@ -177,11 +187,11 @@ int main()
     	for(i=0;i<cmdCount;i++){
     		
     		//initialize array argument
-    		char * command[50];
+    		char * command[1024];
     		
 			
 			int cmdSize =  createArgArray(command,cmdPtr[i]);
-			char * args[cmdCount+1];
+			char * args[cmdSize+1];
     		createExecParams(command,args,cmdSize);
     		
     		//initialize needed vars for forking
@@ -233,11 +243,11 @@ int main()
 					exit(0);
 					
 				} else if(i==cmdCount-1&&fileLast==1){
-					//read frominput and write to file
+					//read from input and write to file
 					FILE * file;
 					file = fopen(args[0],"w");
 					if(file!=NULL){
-						char buffer[300];
+						char buffer[1024];
 						while( fgets(buffer, sizeof(buffer), stdin) != NULL )
 						{
 							fprintf(file,buffer);
@@ -249,15 +259,23 @@ int main()
 				} 
 				else {
 					//run the execute
-					int status = execvp(args[0], args);
-					if(status < 0){
-						printf("Command %s not found.\n",args[0]);
-						exit(1);
+					
+					if(checkCd(args[0])){
+						printf("cd. cmdSize: %d\n",cmdSize);
+						
+					} else {
+					
+						int status = execvp(args[0], args);
+						if(status < 0){
+							printf("ERROR: exec failed\n");
+			
+							exit(1);
+						}
 					}
 				}
-    		} else {
+    		} else { 
     			//in parent, wait
-    			wait(&child_status);
+    			if(amp==0)wait(&child_status);
 				close(write[i]);
 				if(i > 0){
 					close(read[i]);
@@ -298,10 +316,22 @@ int createArgArray(char ** array, char * str){
   return count;
 }
 
+
+//worthless
 // Checks if the last token is an ampersand
 int checkAmpersand(char ** array, int size){
   char ampersand[] = "&";
   return strcmp(array[size-1],ampersand);
+}
+
+int checkCd(char * array){
+	//returns 1 if string is cd
+	char cd[] = "cd";
+	if(strcmp(array,cd)==0){
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 // Takes all the tokens and adds the null value to the end of the array
@@ -315,7 +345,6 @@ void createExecParams(char ** array, char ** result, int size)
 
 }
 
-// returns the number of '|' characters in the input
 int countPipes(char * str){
 	int count = 0;
 	int i=0;
@@ -329,9 +358,8 @@ int countPipes(char * str){
 	return count;
 }
 
-// This does basically the same thing as the createArgArray() function.
-// It just divides the commands based on the pipe character, and then
-// returns the number of commands.
+
+
 int setCommands(char ** array,char * str){
 	char dividers[] = "|";
 	char * word;
@@ -347,9 +375,9 @@ int setCommands(char ** array,char * str){
   return count;
 }
 
-// Verifies the section between the pipes.
-// State machine to parse commands.
-// Returns 1 if the command is valid, otherwise it returns 0
+
+//verifies the section between the pipes
+//state machine to parse commands
 int verifyCommand(char * str){
 	int inFound = 0;
 	int outFound = 0;
@@ -430,11 +458,13 @@ void splitCommand(char * head,int * out, int * in){
 	while(head[i]!='\0'){
 		char c = head[i];
 		if(c == '>'){
+			//*out = i+1;
 			head[i]='\0';
 			i++;
 			while(head[i]==' ')i++;
 			*out = i;
 		} else if( c == '<' ){
+			//*in = i+1;
 			head[i]='\0';
 			i++;
 			while(head[i]==' ')i++;
@@ -445,7 +475,7 @@ void splitCommand(char * head,int * out, int * in){
 
 }
 
-//replace whitespace with \0 after input filenames or output filenames
+//replace whitespace with \0 after the file names after < and >
 void trim(char * str){
 	int i=0;
 	while(str[i]!='\0'){
@@ -457,6 +487,25 @@ void trim(char * str){
 
 
 
+int verifyAmpersand(char * str){
+	int found = 0;
+	int i=0;
+	while(str[i] != '\0'){
+		char c = str[i];
+		if(found){
+			if(c == ' '||c == '\n'||c=='\t'){
+				str[i] = '\0';
+			} else {
+				return -1;
+			}
+		} else if(c == '&'){
+			str[i] = '\0';
+			found = 1;
+		}
+		i++;
+	}
+	return found;
+}
 
 
 
