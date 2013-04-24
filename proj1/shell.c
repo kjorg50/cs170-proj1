@@ -27,6 +27,7 @@ void trim(char * str);
 int verifyAmpersand(char * str);
 int checkCd(char * array);
 int cd(char * arg, int count);
+void checkAndReplaceTildes(char ** array, int tokens);
 //////////////
 
 int main()
@@ -188,6 +189,10 @@ int main()
 			// returns the number of tokens in the command and sets 
 			// the command array with those tokens
 			int cmdSize =  createArgArray(command,cmdPtr[i]);
+
+			// check for tildes and replace with the HOME path string if there are any
+			//checkAndReplaceTildes(command, cmdSize);
+
 			char * args[cmdCount+1];
     		createExecParams(command,args,cmdSize); 
     		
@@ -221,7 +226,7 @@ int main()
 					//read from input file and print it (to pipe input)
 					// i.e. command < input.txt
 					
-					char buffer[300];
+					char buffer[1024];
 					//check length of args here?
 					FILE * file;
 					file = fopen(args[0],"r");
@@ -510,22 +515,51 @@ int checkCd(char * array){
 // takes a cd command and changes to the correct directory
 int cd(char * arg, int count){
 	char * str = arg;
+	printf("%s\n", arg);
+	//char * path = getenv("HOME");
+	char * home = NULL;
+	strcpy(home, getenv("HOME"));
+	printf("%i\n",count);
 	if(count == 1){
-		chdir(getenv("HOME"));
+		printf("*** go to: %s\n",home);
+		chdir(home);
 	} else {
 		if(str[0]=='~'){
-			char * dir = strcat(getenv("HOME"),&str[1]);
-			printf("%s\n",dir);
+			//char * temp_env = getenv(home);
+			printf("*** before cat: %s\n",home);
+			char * dir = strcat(home,&str[1]);
+			printf("*** after cat, go to: %s\n",dir);
 			chdir(dir);
 			dir = NULL;
+			//temp_env = NULL;
 		}
 		chdir(str);
 	} 
+	str = NULL;
 	return 0;
 }
 
-
-
+/*
+// Checks for '~' characters and replaces them with the appropriate HOME path string
+void checkAndReplaceTildes(char ** array, int tokens)
+{
+	int i;
+	char * word = NULL;
+	char * home = getenv("HOME");
+	for(i = 0; i<tokens; i++){
+		word = array[i];
+		printf("*** word %i is %s\n", i, word);
+		if(word[0]=='~'){
+			char * temp = strcat(getenv("HOME"),&word[1]);
+			array[i] = temp;
+			printf("*** after tilde replace = %s\n", temp);
+			temp = NULL;
+		}
+		
+	}		
+	word = NULL;
+}
+*/
 
 
 
