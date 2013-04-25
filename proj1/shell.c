@@ -27,7 +27,6 @@ void trim(char * str);
 int verifyAmpersand(char * str);
 int checkCd(char * array);
 int cd(char * arg, int count);
-void removeSpecialChars(char * input);
 //////////////
 
 int main()
