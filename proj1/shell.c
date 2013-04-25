@@ -221,7 +221,7 @@ int main()
 	    //read from input file and print it (to pipe input)
 	    // i.e. command < input.txt
 					
-	    char buffer[300];
+	    char buffer[1024];
 	    //check length of args here?
 	    FILE * file;
 	    file = fopen(args[0],"r");
@@ -246,7 +246,7 @@ int main()
 	    FILE * file;
 	    file = fopen(args[0],"w");
 	    if(file!=NULL){
-	      char buffer[300];
+	      char buffer[1024];
 
 	      // fgets gets input from stdin and writes to file
 	      while( fgets(buffer, sizeof(buffer), stdin) != NULL )
