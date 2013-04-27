@@ -1,0 +1,18 @@
+# Kyle Jorgensen, Perm: 4165916
+# Alex Mousavi, Perm: 4241683
+# Project 1, CS170, 4-26-13
+
+Simple Shell
+------------
+Our simple shell handles all basic commands properly with input, output, and piping. We did not do lots of special tricks to take care of corner cases. As we interpreted the instructions, we treated the following characters as whitespace:
+
+' ' 	   (space)
+','  	   (comma)
+'\t'	   (tab)
+'\n'	   (newline)
+
+Everything else is treated as regular text, except for the non-printable characters (such as up-arrow), which are not allowed. Typing "exit" ends the shell. 
+
+Lottery Scheduling
+------------------
+We followed the TA's instructions and implemented a lottery system that required adding extra user queues to the include/minix/config.h file. This way, queue 16 would be the queue for the winning process, queue 17 would contain the processes with tickets who are waiting to be selected from the lottery, and queue 18 would now contain the idle process. The other files we changed in the source code were servers/sched/schedule.c and servers/sched/schedproc.h. We tested it to the best of our ability, but we are not 100% sure if it is working correctly. 
