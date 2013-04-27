@@ -1,6 +1,5 @@
 // Kyle Jorgensen and Alex Mousavi, Proj 1, CS170, 4-17-13
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -158,7 +157,6 @@ int main()
     		
 	cmdCount = newCmdCount;
 	cmdPtr = newCommands;
-	//printf("I'm still alive. 2\n");
       } else {
 	cmdPtr = commands;
       }
@@ -374,7 +372,6 @@ int verifyCommand(char * str){
   int i=0;
   while(1){
     char c = str[i];
-    //printf("%c",c);
     if(state==0){
       //printf("0");
       if(c=='<'||c=='>')
